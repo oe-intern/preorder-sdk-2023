@@ -1,0 +1,33 @@
+
+
+{% if product %}
+  {% assign isInStock1 = true %}
+  {% for variant in product.variants %}
+    {% if variant.inventory_quantity > 0 %}
+      {% assign isInStock1 = false %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
+<script src="{{'app.js' | asset_url}}" defer="defer"></script>
+
+<link rel="stylesheet" href="{{'app.css' | asset_url}}">
+
+<script>
+  window.isInStock = {{ isInStock1 }};
+</script>
+
+{% schema %}
+  {
+    "name": "Pre-order block",
+    "target": "section",
+    "settings": [
+      {
+        "type": "color",
+        "id": "color",
+        "label": "Pre-order Button Color",
+        "default": "#a19797"
+      }
+    ]
+  }
+{% endschema %}

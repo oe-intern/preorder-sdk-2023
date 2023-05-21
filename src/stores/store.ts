@@ -4,6 +4,7 @@ export const useStore = defineStore({
     id: "store",
     state: () => {
         return {
+            isDisable:false,
             isSubmitted: false,
             isLoading: false,
             isShowForm: false,
@@ -18,6 +19,9 @@ export const useStore = defineStore({
     },
 
     actions: {
+        setIsDisable(isDisable: boolean){
+            this.isDisable = isDisable;
+        },
         setIsSubmitted(isSubmitted: boolean) {
             this.isSubmitted = isSubmitted;
         },

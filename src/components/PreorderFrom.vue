@@ -26,11 +26,11 @@ export default {
     watch(addressInput, (newValue, oldValue) => {
       if (newValue !== '') {
         formData.address = newValue;
-        fetchData(newValue);
+        fetchAddressDate(newValue);
       }
     });
 
-    const fetchData = (inputValue: string) => {
+    const fetchAddressDate = (inputValue: string) => {
       axios.get(`https://api.geoapify.com/v1/geocode/autocomplete?text=${inputValue}&apiKey=2c7b916c62724a48893851d7d9a37956`)
         .then(response => {
           addressList.value = response.data;
@@ -46,6 +46,7 @@ export default {
     }
 
     const submitForm = () => {
+      axios.post('https://localhost:5901/api/sdk/preorders', formData);
       console.log(formData);
       store.setIsLoading(true);
       store.setIsShowForm(false);
@@ -64,7 +65,7 @@ export default {
       addressList,
       addressInput,
       submitForm,
-      fetchData
+      fetchAddressDate
     };
   },
 };
@@ -89,7 +90,8 @@ export default {
       <input type="input" id="address" v-model="addressInput" placeholder="Search for a address.." autocomplete="off"
         list="suggestions" />
       <datalist id="suggestions">
-        <option v-for="suggestion in addressList.features" :value="suggestion.properties.formatted" />
+        <option v-for="suggestion in addressList.features" :value="suggestion.properties.formatted">
+        </option>
       </datalist>
     </div>
     <br>

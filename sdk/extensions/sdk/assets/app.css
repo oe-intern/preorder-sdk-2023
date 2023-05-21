@@ -87,3 +87,10 @@ button:hover {
     transform: rotate(360deg);
   }
 }
+
+#suggestions option::before {
+  content: "📍";
+  /* Position icon, you can change it to your desired icon */
+  margin-right: 5px;
+  /* Adjust the spacing between the icon and the text */
+}

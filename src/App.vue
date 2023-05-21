@@ -1,7 +1,8 @@
 <script lang="ts">
 import PreorderFrom from './components/PreorderFrom.vue';
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, ref, watch, watchEffect } from 'vue';
 import { useStore } from './stores/store';
+import { onBeforeRouteUpdate } from 'vue-router';
 import axios from 'axios';
 export default {
     name: "App",
@@ -10,43 +11,72 @@ export default {
         const isInStock = (window as any).isInStock;
         const isShowButton = ref(false);
         var quantity;
-        var status = ref(3)
         var getVariant = ref({} as any)
+        const getVariantParam = ref('')
+        const urlParams = new URL(window.location.href)
+
         store.setProductId((window as any).ShopifyAnalytics.meta.product.id);
-
         setTimeout(() => {
-            store.setSelectedVariantId(((window as any).ShopifyAnalytics.meta.selectedVariantId));
-        }, 1000);
+            store.setSelectedVariantId((window as any).ShopifyAnalytics.meta.selectedVariantId);
+        }, 2000);
 
-        axios.get(`https://localhost:5901/api/sdk/active/${store.productId}`).then(
-            res => {
-                if (isInStock && res.data.status === 0) {
-                    const quanityInput = document.getElementsByClassName("quantity__input");
-                    const formButtons = document.getElementsByClassName("product-form__buttons");
-                    if (quanityInput && formButtons) {
-                        setTimeout(() => {
-                            getVariant.value = res.data.variants.find((element: any) =>
-                                element.id === parseInt(store.selectedVariantId)
-                            );
-                            console.log(getVariant.value)
-                            quanityInput.item(0)?.setAttribute("max", `${getVariant.value.stock + 2}`);
-                        }, 2000);
-                        formButtons.item(0)?.setAttribute("style", "display:none");
-                    }
-                    isShowButton.value = true;
+        const watchUrl = (callback: any) => {
+            let oldValue = urlParams.searchParams.get('variant');
+            setInterval(() => {
+                const newValue = urlParams.searchParams.get('variant');
+                if (newValue !== oldValue) {
+                    callback(newValue, oldValue);
+                    oldValue = newValue;
+                    window.history.replaceState(null, '', urlParams.toString());
                 }
-            }
-        );
+            }, 10); // Check every 100 milliseconds
+        };
 
+        const dateCheck = (date_start: any, date_end: any) => {
+            const today = new Date()
+            return today >= date_start.value && today <= date_end.value
+        }
 
-        watch(status, (newValue, oldValue) => {
-            store.setStatus(newValue)
+        watchUrl((newValue: any, oldValue: any) => {
+            getVariantParam.value = newValue;
         });
+
+        onMounted(() => {
+            axios.get(`https://localhost:5901/api/sdk/active/${store.productId}`).then(
+                res => {
+                    const date_start = ref(new Date(res.data.date_start));
+                    const date_end = ref(new Date(res.data.date_end));
+                    const isValidDate = dateCheck(date_start, date_end)
+                    if (isInStock && res.data.status === 0 && isValidDate) {
+                        const quanityInput = document.getElementsByClassName("quantity__input");
+                        const formButtons = document.getElementsByClassName("product-form__buttons");
+                        if (quanityInput && formButtons) {
+                            setTimeout(() => {
+                                getVariant.value = res.data.variants.find((element: any) =>
+                                    element.id === parseInt(store.selectedVariantId)
+                                );
+                                console.log(getVariant.value)
+
+                                if (getVariant.value.stock === 0) {
+                                    store.setIsDisable(true);
+                                }
+                                else {
+                                    quanityInput.item(0)?.setAttribute("max", `${getVariant.value.stock + 2}`);
+                                }
+                            }, 2000);
+                            formButtons.item(0)?.setAttribute("style", "display:none");
+                        }
+                        isShowButton.value = true;
+                    }
+                }
+            );
+        })
 
 
         const handleClick = () => {
             store.setIsShowForm(true);
             isShowButton.value = false;
+            const variantDiv = document.getElementsByClassName('js product-form__input');
             const priceDiv = document.getElementsByClassName("price--show-badge");
             const quantityDiv = document.getElementsByClassName("product-form__input product-form__quantity");
             const vendorDiv = document.getElementsByClassName('product__text inline-richtext caption-with-letter-spacing');
@@ -55,7 +85,8 @@ export default {
             var quantityInput = document.getElementsByClassName('quantity__input').item(0) as HTMLInputElement;
             quantity = quantityInput ? Number(quantityInput.value) : 0;
             store.setQuantity(quantity);
-            if (priceDiv && quantityDiv && vendorDiv && titleDiv && productInfoDiv) {
+            if (variantDiv && priceDiv && quantityDiv && vendorDiv && titleDiv && productInfoDiv) {
+                variantDiv.item(0)?.setAttribute("style", "display:none");
                 productInfoDiv.item(0)?.setAttribute('style', 'width:500px');
                 vendorDiv.item(0)?.setAttribute("style", "display:none");
                 titleDiv.item(0)?.setAttribute("style", "display:none");
@@ -70,8 +101,8 @@ export default {
         return {
             isShowButton,
             store,
-            status,
             getVariant,
+            getVariantParam,
             handleClick
         };
     },
@@ -96,12 +127,12 @@ export default {
                 Your Pre-order have been placed!
             </span>
         </div>
-
         <span v-if="isShowButton">
             {{ getVariant.stock }} items left for pre-order.
         </span>
         <button v-if="isShowButton" class="shopify-payment-button__button shopify-payment-button__button--unbranded"
-            id="pre-order-btn" style="background-color: red;" @click="handleClick">Pre-order Now
+            id="pre-order-btn" style="background-color: red;" @click="handleClick" :disabled="store.isDisable">
+            Pre-order Now
         </button>
 
         <PreorderFrom v-if="store.isShowForm"></PreorderFrom>

@@ -1,5 +1,3 @@
-
-
 {% if product %}
   {% assign isInStock1 = true %}
   {% for variant in product.variants %}
@@ -8,6 +6,7 @@
     {% endif %}
   {% endfor %}
 {% endif %}
+
 
 <script src="{{'app.js' | asset_url}}" defer="defer"></script>
 

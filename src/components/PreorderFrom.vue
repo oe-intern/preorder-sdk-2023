@@ -36,11 +36,11 @@ export default {
     watch(addressInput, (newValue, oldValue) => {
       if (newValue !== '') {
         formData.address = newValue;
-        fetchAddressDate(newValue);
+        fetchAddressData(newValue);
       }
     });
 
-    const fetchAddressDate = (inputValue: string) => {
+    const fetchAddressData = (inputValue: string) => {
       axios.get(`https://api.geoapify.com/v1/geocode/autocomplete?text=${inputValue}&apiKey=2c7b916c62724a48893851d7d9a37956`)
         .then(response => {
           addressList.value = response.data;
@@ -135,7 +135,7 @@ export default {
       validateEmail,
       handleCancel,
       submitForm,
-      fetchAddressDate
+      fetchAddressData
     };
   },
 };

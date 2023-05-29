@@ -11,9 +11,8 @@ export const useStore = defineStore({
             isShowForm: false,
             selectedVariantId: '',
             productId: 0,
-            quantiy: 1,
+            quantity: 1,
             status: 1,
-            stock: 1,
             inventory: 0
         };
 
@@ -36,13 +35,10 @@ export const useStore = defineStore({
             this.isShowForm = isShowForm;
         },
         setQuantity(quantity: number) {
-            this.quantiy = quantity;
+            this.quantity = quantity;
         },
         setStatus(status: number) {
             this.status = status;
-        },
-        setStock(stock: number) {
-            this.stock = stock;
         },
         setInventory(inventory: number) {
             this.inventory = inventory;

@@ -9,19 +9,18 @@ export default {
     setup() {
         var store = useStore();
         var quantity: number;
-        var getVariant = ref({} as any)
+        var getVariant = ref({} as any);
+        var selectedVariant = ref('');
         const isInStock = (window as any).isInStock;
-        const getVariantParam = ref('')
+        const getVariantParam = ref('');
         const urlParams = new URL(window.location.href)
-        const variantDiv = document.getElementsByClassName('js product-form__input');
         const priceDiv = document.getElementsByClassName("price--show-badge");
         const quantityDiv = document.getElementsByClassName("product-form__input product-form__quantity");
         const vendorDiv = document.getElementsByClassName('product__text inline-richtext caption-with-letter-spacing');
         const titleDiv = document.getElementsByClassName('product__title');
         const productInfoDiv = document.getElementsByClassName('product__info-container product__column-sticky');
         const quantityInput = document.getElementsByClassName('quantity__input').item(0) as HTMLInputElement
-        const radiosTag = document.getElementsByTagName('variant-radios').item(0)
-        const radios = radiosTag?.getElementsByTagName('input');
+        const variantRadios = document.querySelector('variant-radios');
         const formButtons = document.getElementsByClassName("product-form__buttons");
 
         store.setProductId((window as any).ShopifyAnalytics.meta.product.id);
@@ -41,34 +40,100 @@ export default {
             }, 100); // Check every 100 milliseconds
         };
 
-        const dateCheck = (date_start: any, date_end: any) => {
-            const today = new Date()
-            return today >= date_start.value && today <= date_end.value
+        const isDateInRange = (startDate: any, endDate: any) => {
+            return new Date() >= startDate && new Date() <= endDate;
         }
 
+
         const quantityCheck = (quantityValue: string) => {
+            let notifiText = document.getElementById('notifi-text');
             if (Number(quantityValue) > getVariant.value.stock) {
-                quantity = Number(getVariant.value.stock);
+                store.setIsDisable(true);
+                if (notifiText) {
+                    console.log(notifiText.textContent);
+                    notifiText.textContent = " ⚠ You cannot add a quantity more than the variant stock! "
+                }
             }
             else if (Number(quantityValue) < 1 || isNaN(Number(quantityValue))) {
-                quantity = 1
+                store.setIsDisable(true);
+                if (notifiText) {
+                    notifiText.textContent = " ⚠ Invalid quantity! "
+                }
             }
             else {
+                store.setIsDisable(false);
+                if (notifiText) {
+                    notifiText.textContent = " "
+                }
                 quantity = Number(quantityValue)
             }
         }
 
+        const hideVariantFieldsets = () => {
+            const variantFieldsets = variantRadios?.querySelectorAll('fieldset');
+            variantFieldsets?.forEach((fieldset) => {
+                fieldset.style.display = 'none';
+            });
+        };
+
+        const setProductInfoDivWidth = () => {
+            productInfoDiv.item(0)?.setAttribute('style', 'width:500px');
+        };
+
+        const hideVendorTitlePriceQuantityDivs = () => {
+            vendorDiv.item(0)?.setAttribute('style', 'display:none');
+            titleDiv.item(0)?.setAttribute('style', 'display:none');
+            priceDiv.item(0)?.setAttribute('style', 'display:none');
+            quantityDiv.item(0)?.setAttribute('style', 'display:none');
+        };
+
         const setAttributesOnClick = () => {
-            if (variantDiv && priceDiv && quantityDiv && vendorDiv && titleDiv && productInfoDiv) {
-                variantDiv.item(0)?.setAttribute("style", "display:none");
-                productInfoDiv.item(0)?.setAttribute('style', 'width:500px');
-                vendorDiv.item(0)?.setAttribute("style", "display:none");
-                titleDiv.item(0)?.setAttribute("style", "display:none");
-                priceDiv.item(0)?.setAttribute("style", "display:none");
-                quantityDiv.item(0)?.setAttribute("style", "display:none");
+            if (priceDiv && quantityDiv && vendorDiv && titleDiv) {
+                hideVariantFieldsets();
+                setProductInfoDivWidth();
+                hideVendorTitlePriceQuantityDivs();
+            }
+        };
+
+
+        function handleRadioChange(variantsArray: any) {
+            setTimeout(() => {
+                store.setSelectedVariantId((window as any).ShopifyAnalytics.meta.selectedVariantId);
+            }, 2000);
+            if (variantRadios) {
+                const radioInputs = variantRadios.querySelectorAll('input[type="radio"]:checked');
+                selectedVariant.value = Array.from(radioInputs)
+                    .filter((input) => input instanceof HTMLInputElement)
+                    .map((input) => (input as HTMLInputElement).value)
+                    .join(' / ');
+
+                if (selectedVariant.value) {
+                    getVariant.value = variantsArray.find((element: any) =>
+                        element.title_var === selectedVariant.value
+                    );
+                    console.log(getVariant.value)
+                    if (getVariant.value.stock === 0) {
+                        store.setIsDisable(true);
+                    }
+                    else {
+                        store.setIsDisable(false);
+                        setTimeout(() => {
+                            quantityInput.setAttribute("max", `${getVariant.value.stock}`);
+                        }, 2000);
+                    }
+                }
             }
         }
 
+        const handleClick = () => {
+            store.setIsShowForm(true);
+            store.setIsShowButton(false);
+            if (quantityInput) {
+                quantityCheck(quantityInput.value)
+            }
+            store.setQuantity(quantity);
+            setAttributesOnClick();
+        }
 
         watchUrl((newValue: any, oldValue: any) => {
             getVariantParam.value = newValue;
@@ -76,37 +141,22 @@ export default {
 
         onMounted(() => {
             axios.get(`https://localhost:5901/api/sdk/active/${store.productId}`).then(
-                res => {
-                    console.log(res.data);
-                    const date_start = ref(new Date(res.data.date_start));
-                    const date_end = ref(new Date(res.data.date_end));
-                    const isValidDate = dateCheck(date_start, date_end)
-                    if (isInStock && res.data.status === 1 && isValidDate) {
-                        if (radios) {
-                            for (let i = 0; i < radios.length; i++) {
-                                radios[i].addEventListener("change", function () {
-                                    if (this.checked) {
-                                        const selectedVariant = this.value;
-                                        getVariant.value = res.data.variants.find((element: any) =>
-                                            element.title_var === selectedVariant
-                                        );
-                                        if (getVariant.value.stock === 0) {
-                                            store.setIsDisable(true);
-                                        }
-                                        else {
-                                            store.setIsDisable(false);
-                                            setTimeout(() => {
-                                                quantityInput.setAttribute("max", `${getVariant.value.stock}`);
-                                            }, 2000);
-                                        }
-
-                                    }
-                                });
-                            }
-                        }
+                response => {
+                    console.log(response.data);
+                    const dateStart = new Date(response.data.date_start);
+                    const dateEnd = new Date(response.data.date_end);
+                    const isValidDate = isDateInRange(dateStart, dateEnd)
+                    const variantsArray = response.data.variants;
+                    if (isInStock && response.data.status === 1 && isValidDate) {
+                        variantRadios?.addEventListener('change', function () {
+                            handleRadioChange(variantsArray);
+                        });
                         if (quantityInput && formButtons) {
+                            quantityInput.addEventListener("change", function () {
+                                quantityCheck(quantityInput.value);
+                            })
                             setTimeout(() => {
-                                getVariant.value = res.data.variants.find((element: any) =>
+                                getVariant.value = response.data.variants.find((element: any) =>
                                     element.id === parseInt(store.selectedVariantId)
                                 );
                                 console.log(getVariant.value)
@@ -125,17 +175,6 @@ export default {
                 }
             );
         })
-
-
-        const handleClick = () => {
-            store.setIsShowForm(true);
-            store.setIsShowButton(false);
-            if (quantityInput) {
-                quantityCheck(quantityInput.value)
-            }
-            store.setQuantity(quantity);
-            setAttributesOnClick();
-        }
 
         return {
             store,
@@ -159,7 +198,6 @@ export default {
             <div>Placing your pre-order...</div>
         </div>
 
-
         <!-- Show success message or form results -->
         <div v-if="!store.isLoading && store.isSubmitted">
             <span style="color: #228B22;font-size: 25px;">
@@ -167,9 +205,9 @@ export default {
             </span>
         </div>
 
-        <!-- <div>
-                            <Span>You can't add a quantity more than the variant stock!</Span>
-                        </div> -->
+        <div v-if="!store.isShowForm">
+            <span id="notifi-text" style="color:#ff0000;"></span>
+        </div>
 
         <span v-if="store.isShowButton">
             {{ getVariant.stock }} items left for pre-order.

@@ -1,14 +1,23 @@
+
 .form-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* margin: 50px auto; */
-  padding: 40px;
+  margin: 50px auto;
+  padding: 10px;
   max-width: 600px;
   background-color: #f5f5f5;
   border: 1px solid #dcdcdc;
   border-radius: 10px;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+}
+
+.form-title {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 24px;
+  color: #333;
+  text-transform: uppercase;
 }
 
 .form-group {
@@ -56,6 +65,21 @@ button:hover {
   background-color: #0069d9;
 }
 
+.pre-order-btn {
+  text-align: center;
+  cursor: pointer;
+  outline: none;
+  color: #fff;
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 2px #999;
+}
+
+.pre-order-btn:active {
+  box-shadow: 0 2px #666;
+  transform: translateY(1px);
+}
+
 .loading-overlay {
   position: fixed;
   top: 0;
@@ -90,7 +114,9 @@ button:hover {
 
 #suggestions option::before {
   content: "📍";
-  /* Position icon, you can change it to your desired icon */
   margin-right: 5px;
-  /* Adjust the spacing between the icon and the text */
+}
+
+.error-msg {
+  color: #ff0000; /* Specify your desired color code here */
 }

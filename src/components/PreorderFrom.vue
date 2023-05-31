@@ -174,7 +174,7 @@ export default {
       <br>
       <div>
         <span>
-          Order Quantity:{{ store.quantity }}
+          Order Quantity : {{ store.quantity }}
         </span>
       </div>
     </div>
